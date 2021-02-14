@@ -78,5 +78,10 @@ namespace SearchPatrol.Wpf
                 oContext.SetTickSliderValue((int)oSlider.Value);
             }
         }
+
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
     }
 }

@@ -1,9 +1,15 @@
 ﻿using Microsoft.FlightSimulator.SimConnect;
+using Newtonsoft.Json;
 using SearchPatrol.Common;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace SearchPatrol.Wpf
@@ -16,16 +22,16 @@ namespace SearchPatrol.Wpf
         private IntPtr m_hWnd = new IntPtr(0);
 
         /// SimConnect object
-        private SearchPatrolMain searchPatrol = new SearchPatrolMain();
+        private readonly SearchPatrolMain searchPatrol = new SearchPatrolMain();
 
-        SpeechSynthesizer speechSynth = new SpeechSynthesizer();
+        readonly SpeechSynthesizer speechSynth = new SpeechSynthesizer();
 
-        public bool bConnected
+        public bool Connected
         {
-            get { return m_bConnected; }
-            private set { SetProperty(ref m_bConnected, value); }
+            get { return connected; }
+            private set { SetProperty(ref connected, value); }
         }
-        private bool m_bConnected = false;
+        private bool connected = false;
 
         public uint GetUserSimConnectWinEvent()
         {
@@ -47,86 +53,153 @@ namespace SearchPatrol.Wpf
             Console.WriteLine("Disconnect");
 
             timer.Stop();
-            bOddTick = false;
+            OddTick = false;
 
             searchPatrol.Disconnect();
 
-            sConnectButtonLabel = "Connect";
-            bConnected = false;
+            ConnectButtonLabel = "Connect";
+            Connected = false;
         }
 
         #endregion
 
         #region UI bindings
 
-        public string sConnectButtonLabel
+        public string ConnectButtonLabel
         {
             get { return m_sConnectButtonLabel; }
             private set { SetProperty(ref m_sConnectButtonLabel, value); }
         }
         private string m_sConnectButtonLabel = "Connect";
 
-        public bool bOddTick
+        public bool OddTick
         {
             get { return m_bOddTick; }
             set { SetProperty(ref m_bOddTick, value); }
         }
         private bool m_bOddTick = false;
 
-        public ObservableCollection<string> lErrorMessages { get; private set; }
+        public BaseCommand CmdPlaceTarget { get; private set; }
 
+        public NamedProp<bool> AircraftIsChecked { get; set; } = new NamedProp<bool>("Aircraft");
+        public NamedProp<bool> GroundVehicleIsChecked { get; set; } = new NamedProp<bool>("GroundVehicle");
+        public NamedProp<bool> WindmillIsChecked { get; set; } = new NamedProp<bool>("Windmill");
+        public NamedProp<bool> BoatIsChecked { get; set; } = new NamedProp<bool>("Boat");
+        public NamedProp<bool> FishingBoatIsChecked { get; set; } = new NamedProp<bool>("FishingBoat");
+        public NamedProp<bool> YachtIsChecked { get; set; } = new NamedProp<bool>("Yacht");
+        public NamedProp<bool> CargoShipIsChecked { get; set; } = new NamedProp<bool>("CargoShip");
+        public NamedProp<bool> CruiseShipIsChecked { get; set; } = new NamedProp<bool>("CruiseShip");
+        public NamedProp<bool> AnimalIsChecked { get; set; } = new NamedProp<bool>("Animal");
+        public NamedProp<bool> HumanIsChecked { get; set; } = new NamedProp<bool>("Human");
+        public NamedProp<bool> WindsockIsChecked { get; set; } = new NamedProp<bool>("Windsock");
 
-        public BaseCommand cmdToggleConnect { get; private set; }
-        public BaseCommand cmdAddRequest { get; private set; }
-        public BaseCommand cmdRemoveSelectedRequest { get; private set; }
-        public BaseCommand cmdTrySetValue { get; private set; }
-        public BaseCommand cmdLoadFiles { get; private set; }
-        public BaseCommand cmdSaveFile { get; private set; }
-        public BaseCommand cmdPlaceTarget { get; private set; }
+        public Prop<string> StatusText { get; set; } = new Prop<string>();
+        public RoundedProp MinRange { get; set; } = new RoundedProp(1);
+        public RoundedProp MaxRange { get; set; } = new RoundedProp(1);
+        public Prop<bool> WingWave { get; set; } = new Prop<bool>();
+        public Prop<int> TargetDirection { get; set; } = new Prop<int>();
+        public Prop<int> DirectionRandomness { get; set; } = new Prop<int>();
+        public RoundedProp TargetFoundDistance { get; set; } = new RoundedProp(1);
 
-        public Prop<string> statusText { get; set; } = new Prop<string>();
-        public RoundedProp minRange { get; set; } = new RoundedProp(1);
-        public RoundedProp maxRange { get; set; } = new RoundedProp(1);
-        public Prop<bool> wingWave { get; set; } = new Prop<bool>();
-        public Prop<int> targetDirection { get; set; } = new Prop<int>();
-        public Prop<int> directionRandomness { get; set; } = new Prop<int>();
+        public Prop<bool> VoiceAnnouncement { get; set; } = new Prop<bool>();
+        public Prop<bool> TextAnnouncement { get; set; } = new Prop<bool>();
 
         #endregion
 
         #region Real time
 
-        private DispatcherTimer timer = new DispatcherTimer();
+        private readonly DispatcherTimer timer = new DispatcherTimer();
 
         #endregion
 
+        readonly SearchPatrolSettings settings = new SearchPatrolSettings();
+
         public SearchPatrolViewModel()
         {
-            lErrorMessages = new ObservableCollection<string>();
-
-            cmdToggleConnect = new BaseCommand((p) => { ToggleConnect(); });
-
-            cmdPlaceTarget = new BaseCommand((p) => { PlaceTarget(); });
-
-            minRange.PropertyChanged += (sender, args) =>
+            settings = LoadSettings();
+            foreach (var t in searchPatrol.TargetChoices)
             {
-                searchPatrol.targetRangeKmMin = minRange.Value;
-                if (minRange.Value > maxRange.Value)
+                if (settings.TargetChoices.Contains(t))
                 {
-                    maxRange.Value = minRange.Value;
+                    searchPatrol.SetTargetEnabled(t, true);
                 }
+                else
+                {
+                    searchPatrol.SetTargetEnabled(t, false);
+                }
+            }
+
+            searchPatrol.TargetRangeKmMin = MinRange.Value = settings.MinRange;
+            searchPatrol.TargetRangeKmMax = MaxRange.Value = settings.MaxRange;
+            searchPatrol.TargetDirection = TargetDirection.Value = settings.TargetDirection;
+            searchPatrol.DirectionRandomness = DirectionRandomness.Value = settings.DirectionRandomness;
+            searchPatrol.TargetFoundDistance = TargetFoundDistance.Value = settings.TargetFoundDistance;
+
+            MinRange.PropertyChanged += (sender, args) =>
+            {
+                settings.MinRange = searchPatrol.TargetRangeKmMin = MinRange.Value;
+                if (MinRange.Value > MaxRange.Value)
+                {
+                    settings.MaxRange = MaxRange.Value = MinRange.Value;
+                }
+                SaveSettings();
             };
 
-            maxRange.PropertyChanged += (sender, args) =>
+            MaxRange.PropertyChanged += (sender, args) =>
             {
-                searchPatrol.targetRangeKmMax = maxRange.Value;
-                if (maxRange.Value < minRange.Value)
+                settings.MaxRange = searchPatrol.TargetRangeKmMax = MaxRange.Value;
+                if (MaxRange.Value < MinRange.Value)
                 {
-                    minRange.Value = maxRange.Value;
+                    settings.MinRange = MinRange.Value = MaxRange.Value;
                 }
+                SaveSettings();
             };
 
-            maxRange.Value = searchPatrol.targetRangeKmMax;
-            minRange.Value = searchPatrol.targetRangeKmMin;
+            TargetDirection.PropertyChanged += (sender, args) =>
+            {
+                settings.TargetDirection = searchPatrol.TargetDirection = TargetDirection.Value;
+                SaveSettings();
+            };
+
+            TargetFoundDistance.PropertyChanged += (sender, args) =>
+            {
+                settings.TargetFoundDistance = searchPatrol.TargetFoundDistance = TargetFoundDistance.Value;
+                SaveSettings();
+            };
+
+            DirectionRandomness.PropertyChanged += (sender, args) =>
+            {
+                settings.DirectionRandomness = searchPatrol.DirectionRandomness = DirectionRandomness.Value;
+                SaveSettings();
+            };
+
+            VoiceAnnouncement.Value = settings.VoiceAnnouncement;
+            VoiceAnnouncement.PropertyChanged += (sender, args) =>
+            {
+                settings.VoiceAnnouncement = VoiceAnnouncement.Value;
+                SaveSettings();
+            };
+
+            TextAnnouncement.Value = settings.TextAnnouncement;
+            TextAnnouncement.PropertyChanged += (sender, args) =>
+            {
+                settings.TextAnnouncement = searchPatrol.ShowTextAnnouncements = TextAnnouncement.Value;
+                SaveSettings();
+            };
+
+            CmdPlaceTarget = new BaseCommand((p) => { PlaceTarget(); });
+
+            CreateTargetProp(AircraftIsChecked);
+            CreateTargetProp(GroundVehicleIsChecked);
+            CreateTargetProp(WindmillIsChecked);
+            CreateTargetProp(BoatIsChecked);
+            CreateTargetProp(FishingBoatIsChecked);
+            CreateTargetProp(YachtIsChecked);
+            CreateTargetProp(CargoShipIsChecked);
+            CreateTargetProp(CruiseShipIsChecked);
+            CreateTargetProp(AnimalIsChecked);
+            CreateTargetProp(HumanIsChecked);
+            CreateTargetProp(WindsockIsChecked);
 
             searchPatrol.OnAnnouncement += OnAnnouncement;
 
@@ -135,10 +208,70 @@ namespace SearchPatrol.Wpf
             timer.Start();
         }
 
+        void CreateTargetProp(NamedProp<bool> prop)
+        {
+            prop.Value = settings.TargetChoices.Contains(prop.Name);
+            prop.PropertyChanged += (sender, args) => SetTargetChecked(sender);
+        }
+
+        void SetTargetChecked(object sender)
+        {
+            var prop = sender as NamedProp<bool>;
+            searchPatrol.SetTargetEnabled(prop.Name, prop.Value);
+            settings.TargetChoices = searchPatrol.TargetChoices;
+            SaveSettings();
+        }
+
+        static readonly string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SearchPatrol/");
+        readonly string settingsFile = Path.Combine(settingsPath, "searchPatrolSettings.json");
+
+        void SaveSettings()
+        {
+            var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
+            try
+            {
+                Directory.CreateDirectory(settingsPath);
+                File.WriteAllText(settingsFile, json);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error saving settings: {e}");
+            }
+        }
+
+        SearchPatrolSettings LoadSettings()
+        {
+            SearchPatrolSettings settings = null;
+            try
+            {
+                if (File.Exists(settingsFile))
+                {
+                    var json = File.ReadAllText(settingsFile);
+                    settings = JsonConvert.DeserializeObject<SearchPatrolSettings>(json);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error loading settings: {e}");
+            }
+            if (settings == null)
+            {
+                settings = new SearchPatrolSettings
+                {
+                    MinRange = searchPatrol.TargetRangeKmMin,
+                    MaxRange = searchPatrol.TargetRangeKmMax,
+                    TargetDirection = searchPatrol.TargetDirection,
+                    DirectionRandomness = searchPatrol.DirectionRandomness,
+                    TargetFoundDistance = searchPatrol.TargetFoundDistance,
+                    TargetChoices = searchPatrol.TargetChoices,
+                    TextAnnouncement = searchPatrol.ShowTextAnnouncements
+                };
+            }
+            return settings;
+        }
+
         private void Connect()
         {
-            Console.WriteLine("Connect");
-
             try
             {
                 /// The constructor is similar to SimConnect_Open in the native API
@@ -157,7 +290,7 @@ namespace SearchPatrol.Wpf
             }
             catch (COMException ex)
             {
-                Console.WriteLine("Connection to KH failed: " + ex.Message);
+                Console.WriteLine("Connection to MSFS failed: " + ex.Message);
             }
         }
 
@@ -165,25 +298,25 @@ namespace SearchPatrol.Wpf
         // See SimConnect.RequestDataOnSimObject
         private void OnTick(object sender, EventArgs e)
         {
-            Console.WriteLine("OnTick");
-
             if (searchPatrol.Connected)
             {
-                bOddTick = !bOddTick;
+                OddTick = !OddTick;
             }
             else
             {
-                bOddTick = false;
+                OddTick = false;
             }
 
             TryConnect();
 
+            /*
             var text = $"User: {searchPatrol.UserLat:0.000}, {searchPatrol.UserLng:0.000}\n";
             text += $"Heading: {searchPatrol.TargetBearing:0}, Distance: {searchPatrol.TargetDistance:0.0}\n";
             text += $"Target is about {searchPatrol.TargetFuzzedDistance} km {searchPatrol.TargetFuzzedDirection}";
             statusText.Value = text;
+            */
 
-            wingWave.Value = searchPatrol.DetectWingWave();
+            WingWave.Value = searchPatrol.DetectWingWave();
         }
 
         void TryConnect()
@@ -225,10 +358,10 @@ namespace SearchPatrol.Wpf
             Console.WriteLine("SimConnect_OnRecvOpen");
             Console.WriteLine("Connected to MSFS");
 
-            sConnectButtonLabel = "Disconnect";
-            bConnected = true;
+            ConnectButtonLabel = "Disconnect";
+            Connected = true;
 
-            bOddTick = false;
+            OddTick = false;
         }
 
         /// The case where the user closes game
@@ -245,7 +378,7 @@ namespace SearchPatrol.Wpf
             SIMCONNECT_EXCEPTION eException = (SIMCONNECT_EXCEPTION)data.dwException;
             Console.WriteLine("SimConnect_OnRecvException: " + eException.ToString());
 
-            lErrorMessages.Add("SimConnect : " + eException.ToString());
+            //ErrorMessages.Add("SimConnect : " + eException.ToString());
         }
 
         public void PlaceTarget()
@@ -255,7 +388,10 @@ namespace SearchPatrol.Wpf
 
         private void OnAnnouncement(string message)
         {
+            if (!VoiceAnnouncement.Value) return;
+
             var text = message.Replace("km", "kilometers");
+            speechSynth.SpeakAsyncCancelAll();
             speechSynth.SpeakAsync(text);
         }
     }

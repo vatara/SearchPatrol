@@ -8,24 +8,41 @@
         xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="MainWindow" Height="413.5" Width="383.5" ResizeMode="NoResize">
+        Title="SearchPatrol" Height="520.5" Width="383.5" ResizeMode="NoResize">
 
-    <StackPanel Margin="20,20,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="337">
+    <StackPanel Margin="10,10,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="337">
         <StackPanel Orientation="Horizontal">
             <Label Content="MSFS Connection"></Label>
             <Ellipse Height="14" Stroke="Black" Width="14">
                 <Ellipse.Style>
                     <Style TargetType="Ellipse">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding bConnected}" Value="false">
+                            <DataTrigger Binding="{Binding Connected}" Value="false">
                                 <Setter Property="Fill" Value="#FFFF5030" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding bConnected}" Value="true">
+                            <DataTrigger Binding="{Binding Connected}" Value="true">
                                 <Setter Property="Fill" Value="#FF50FF30" />
                             </DataTrigger>
-                            <DataTrigger Binding="{Binding bOddTick}" Value="true">
+                            <DataTrigger Binding="{Binding OddTick}" Value="true">
                                 <!-- Assume bOddTick is true only when bConnected is true-->
                                 <Setter Property="Fill" Value="#FF45E2F4" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Ellipse.Style>
+            </Ellipse>
+
+            <Border Width="50"></Border>
+            <Label Content="Wing Wave"></Label>
+            <Ellipse Height="14" Stroke="Black" Width="14">
+                <Ellipse.Style>
+                    <Style TargetType="Ellipse">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding WingWave.Value}" Value="false">
+                                <Setter Property="Fill" Value="#FFFF5030" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding WingWave.Value}" Value="true">
+                                <Setter Property="Fill" Value="#FF50FF30" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -45,14 +62,14 @@
 
             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0">
                 <Label Content="Min Range"></Label>
-                <Label Content="{Binding minRange.Value, StringFormat=N1}" MinWidth="50"></Label>
+                <Label Content="{Binding MinRange.Value, StringFormat=N1}" MinWidth="50"></Label>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" MinWidth="50">
                 <Label Content="Max Range"></Label>
-                <Label Content="{Binding maxRange.Value, StringFormat=N1}"></Label>
+                <Label Content="{Binding MaxRange.Value, StringFormat=N1}"></Label>
             </StackPanel>
-            <Slider Value="{Binding minRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="0"/>
-            <Slider Value="{Binding maxRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="1"/>
+            <Slider Value="{Binding MinRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="0"/>
+            <Slider Value="{Binding MaxRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="1"/>
         </Grid>
 
         <Grid>
@@ -67,37 +84,59 @@
 
             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0">
                 <Label Content="Target Direction"></Label>
-                <Label Content="{Binding targetDirection.Value}" MinWidth="50"></Label>
+                <Label Content="{Binding TargetDirection.Value}" MinWidth="50"></Label>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" MinWidth="50">
                 <Label Content="Direction Randomness"></Label>
-                <Label Content="{Binding directionRandomness.Value}"></Label>
+                <Label Content="{Binding DirectionRandomness.Value}"></Label>
             </StackPanel>
-            <Slider Value="{Binding targetDirection.Value, Mode=TwoWay}" Minimum="0" Maximum="360" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="0"/>
-            <Slider Value="{Binding directionRandomness.Value, Mode=TwoWay}" Minimum="0" Maximum="360" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="1"/>        </Grid>
-
-        <Border Height="10"></Border>
-
-        <Button x:Name="placeTargetButton" Content="Place Target" Command="{Binding cmdPlaceTarget}" IsEnabled="{Binding bConnected}" Width="100" HorizontalAlignment="Left" />
-        <Label Content="Status"></Label>
-        <Label Content="{Binding statusText.Value}" Width="Auto" />
+            <Slider Value="{Binding TargetDirection.Value}" Minimum="0" Maximum="360" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="0"/>
+            <Slider Value="{Binding DirectionRandomness.Value}" Minimum="0" Maximum="360" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="1"/>
+        </Grid>
 
         <StackPanel Orientation="Horizontal">
-            <Label Content="Wing Wave"></Label>
-            <Ellipse Height="14" Stroke="Black" Width="14">
-                <Ellipse.Style>
-                    <Style TargetType="Ellipse">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding wingWave.Value}" Value="false">
-                                <Setter Property="Fill" Value="#FFFF5030" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding wingWave.Value}" Value="true">
-                                <Setter Property="Fill" Value="#FF50FF30" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Ellipse.Style>
-            </Ellipse>
+            <Label Content="Target Found Distance"></Label>
+            <Label Content="{Binding TargetFoundDistance.Value}"></Label>
         </StackPanel>
+        <Slider Minimum=".1" Maximum="2" Value="{Binding TargetFoundDistance.Value}" SmallChange=".1" LargeChange=".2"></Slider>
+
+        <GroupBox Header="Target Types" Margin="0, 10" Height="120">
+            <WrapPanel x:Name="targetTypesPanel" Orientation="Vertical">
+                <WrapPanel.Resources>
+                    <Style TargetType="{x:Type CheckBox}">
+                        <Setter Property="Margin" Value="0,0,0,0"></Setter>
+                    </Style>
+                </WrapPanel.Resources>
+                <CheckBox Content="Aircraft" IsChecked="{Binding AircraftIsChecked.Value}"></CheckBox>
+                <CheckBox Content="GroundVehicle" IsChecked="{Binding GroundVehicleIsChecked.Value}"></CheckBox>
+                <CheckBox Content="Animal" IsChecked="{Binding AnimalIsChecked.Value}"></CheckBox>
+                <CheckBox Content="Human" IsChecked="{Binding HumanIsChecked.Value}"></CheckBox>
+                <CheckBox Content="Windmill" IsChecked="{Binding WindmillIsChecked.Value}"></CheckBox>
+                <CheckBox Content="Windsock" IsChecked="{Binding WindsockIsChecked.Value}"></CheckBox>
+                <!--
+                <CheckBox Content="Boat" IsChecked="{Binding BoatIsChecked.Value}"></CheckBox>
+                <CheckBox Content="FishingBoat" IsChecked="{Binding FishingBoatIsChecked.Value}"></CheckBox>
+                <CheckBox Content="Yacht" IsChecked="{Binding YachtIsChecked.Value}"></CheckBox>
+                <CheckBox Content="CargoShip" IsChecked="{Binding CargoShipIsChecked.Value}"></CheckBox>
+                <CheckBox Content="CruiseShip" IsChecked="{Binding CruiseShipIsChecked.Value}"></CheckBox>
+                -->
+            </WrapPanel>
+        </GroupBox>
+
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+            <StackPanel.Resources>
+                <Style TargetType="{x:Type CheckBox}">
+                    <Setter Property="Margin" Value="10,0,0,0"/>
+                </Style>
+            </StackPanel.Resources>
+            <CheckBox Content="Voice Announcement" IsChecked="{Binding VoiceAnnouncement.Value}"></CheckBox>
+            <CheckBox Content="Text Announcement" IsChecked="{Binding TextAnnouncement.Value}"></CheckBox>
+        </StackPanel>
+        
+        <Button x:Name="placeTargetButton" Content="Place Target" Command="{Binding CmdPlaceTarget}" IsEnabled="{Binding Connected}" Width="100" HorizontalAlignment="Left" />
+        
+        <Label Content="Status" Visibility="Hidden"></Label>
+        <Label Content="{Binding StatusText.Value}" Width="Auto" Visibility="Hidden" />
+        <StackPanel Height="100"/>
     </StackPanel>
 </Window>

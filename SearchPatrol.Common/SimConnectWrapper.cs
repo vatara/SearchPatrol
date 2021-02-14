@@ -58,7 +58,7 @@ namespace SearchPatrol.Common
             return true;
         }
 
-        public void CreateAiSimulatedObject(string szContainerTitle, SIMCONNECT_DATA_INITPOSITION initPos, uint request, uint definition)
+        public void CreateAiSimulatedObject(string szContainerTitle, SIMCONNECT_DATA_INITPOSITION initPos, uint request)
         {
             if (simConnect == null) return;
             simConnect.AICreateSimulatedObject(szContainerTitle, initPos, (REQUEST)request);
@@ -71,6 +71,12 @@ namespace SearchPatrol.Common
             radiusMeters = Math.Min(200_000, radiusMeters);
 
             simConnect.RequestDataOnSimObjectType((REQUEST)request, (DEFINITION)definition, radiusMeters, type);
+        }
+
+        public void CreateAiNonAtcAircraft(string szContainerTitle, SIMCONNECT_DATA_INITPOSITION initPos, uint request)
+        {
+            if (simConnect == null) return;
+            simConnect.AICreateNonATCAircraft(szContainerTitle, "N123", initPos, (REQUEST)request);
         }
     }
 }
