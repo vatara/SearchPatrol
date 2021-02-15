@@ -10,7 +10,8 @@ namespace SearchPatrol.Wpf
         public int DirectionRandomness { get; set; }
         public double TargetFoundDistance { get; set; }
         public List<string> TargetChoices { get; set; }
-        public bool VoiceAnnouncement { get; set; } = true;
         public bool TextAnnouncement { get; set; }
+        public bool VoiceAnnouncement { get; set; } = true;
+        public int VoiceVolume { get; set; } = 100;
     }
 }

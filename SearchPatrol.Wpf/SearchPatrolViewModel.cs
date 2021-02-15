@@ -102,6 +102,7 @@ namespace SearchPatrol.Wpf
         public RoundedProp TargetFoundDistance { get; set; } = new RoundedProp(1);
 
         public Prop<bool> VoiceAnnouncement { get; set; } = new Prop<bool>();
+        public Prop<int> VoiceVolume { get; set; } = new Prop<int>();
         public Prop<bool> TextAnnouncement { get; set; } = new Prop<bool>();
 
         #endregion
@@ -177,6 +178,15 @@ namespace SearchPatrol.Wpf
             VoiceAnnouncement.PropertyChanged += (sender, args) =>
             {
                 settings.VoiceAnnouncement = VoiceAnnouncement.Value;
+                SaveSettings();
+            };
+
+            VoiceVolume.Value = settings.VoiceVolume;
+            VoiceVolume.PropertyChanged += (sender, args) =>
+            {
+                if (VoiceVolume.Value < 0) VoiceVolume.Value = 0;
+                if (VoiceVolume.Value > 100) VoiceVolume.Value = 100;
+                speechSynth.Volume = settings.VoiceVolume = VoiceVolume.Value;
                 SaveSettings();
             };
 

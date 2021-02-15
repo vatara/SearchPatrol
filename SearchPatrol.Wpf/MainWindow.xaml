@@ -123,20 +123,18 @@
             </WrapPanel>
         </GroupBox>
 
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-            <StackPanel.Resources>
-                <Style TargetType="{x:Type CheckBox}">
-                    <Setter Property="Margin" Value="10,0,0,0"/>
-                </Style>
-            </StackPanel.Resources>
-            <CheckBox Content="Voice Announcement" IsChecked="{Binding VoiceAnnouncement.Value}"></CheckBox>
-            <CheckBox Content="Text Announcement" IsChecked="{Binding TextAnnouncement.Value}"></CheckBox>
+        <StackPanel Orientation="Horizontal">
+            <CheckBox Content="Voice Announcement" IsChecked="{Binding VoiceAnnouncement.Value}" VerticalAlignment="Center"></CheckBox>
+            <Label Content="Volume"></Label>
+            <Slider Value="{Binding VoiceVolume.Value}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="20" Width="100" VerticalAlignment="Center"></Slider>
         </StackPanel>
+        <CheckBox Content="Text Announcement" IsChecked="{Binding TextAnnouncement.Value}"></CheckBox>
+
+        <Border Height="10"></Border>
         
         <Button x:Name="placeTargetButton" Content="Place Target" Command="{Binding CmdPlaceTarget}" IsEnabled="{Binding Connected}" Width="100" HorizontalAlignment="Left" />
         
         <Label Content="Status" Visibility="Hidden"></Label>
         <Label Content="{Binding StatusText.Value}" Width="Auto" Visibility="Hidden" />
-        <StackPanel Height="100"/>
     </StackPanel>
 </Window>
