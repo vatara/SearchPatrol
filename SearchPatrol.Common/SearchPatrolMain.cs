@@ -430,7 +430,7 @@ namespace SearchPatrol.Common
                 var p = announcePoints[i];
                 if (distance < p && lastAnnounce.Item2 > p)
                 {
-                    AnnounceMessage(TargetPositionMessage(announceName, i > 0));
+                    AnnounceMessage(TargetPositionMessage(announceName, i == 0));
                     lastAnnounce = new Tuple<DateTimeOffset, double>(DateTimeOffset.UtcNow, p);
                     return;
                 }
