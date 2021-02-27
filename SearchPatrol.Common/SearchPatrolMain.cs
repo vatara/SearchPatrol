@@ -205,26 +205,47 @@ namespace SearchPatrol.Common
 
         public bool DetectWingWave()
         {
-            CleanBankHistory();
+            return DetectWingWave(bankHistory, waveDetectAngle);
+        }
 
+        public static bool DetectWingWave(List<Tuple<DateTimeOffset, double>> bankHistory, double waveDetectAngle)
+        {
             if (bankHistory.Count == 0) return false;
 
+            var waveCount = 0;
+            var reverseCount = 0;
+
             var angles = bankHistory.Select(i => i.Item2);
-            if (angles.Any(a => a < -waveDetectAngle) && angles.Any(a => a > waveDetectAngle))
+
+            var waveDirection = -1;
+            foreach (var a in angles)
+            {
+                var detectAngle = waveDetectAngle * waveDirection;
+                if (Math.Sign(a) == Math.Sign(detectAngle) && Math.Abs(a) > Math.Abs(detectAngle))
+                {
+                    waveCount++;
+                    waveDirection *= -1;
+                }
+                else if (Math.Sign(a) != Math.Sign(detectAngle) && Math.Abs(a) > Math.Abs(detectAngle))
+                {
+                    reverseCount++;
+                    waveDirection *= -1;
+                }
+            }
+
+            if (waveCount >= 3 || reverseCount >= 3)
             {
                 return true;
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         void CheckTargetFound()
         {
             if (targetId == null) return;
 
-            var wave = DetectWingWave();
+            CleanBankHistory();
+            var wave = DetectWingWave(bankHistory, waveDetectAngle);
             if (!wave) return;
 
             AnnounceMessage("Target found");
