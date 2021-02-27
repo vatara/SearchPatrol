@@ -8,11 +8,11 @@
         xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         mc:Ignorable="d"
-        Title="SearchPatrol" Height="520.5" Width="383.5" ResizeMode="NoResize">
+        Title="SearchPatrol" Height="540" Width="383.5" ResizeMode="NoResize">
 
     <StackPanel Margin="10,10,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="337">
         <StackPanel Orientation="Horizontal">
-            <Label Content="MSFS Connection"></Label>
+            <Label Content="MSFS Connection: "></Label>
             <Ellipse Height="14" Stroke="Black" Width="14">
                 <Ellipse.Style>
                     <Style TargetType="Ellipse">
@@ -33,7 +33,7 @@
             </Ellipse>
 
             <Border Width="50"></Border>
-            <Label Content="Wing Wave"></Label>
+            <Label Content="Wing Wave: "></Label>
             <Ellipse Height="14" Stroke="Black" Width="14">
                 <Ellipse.Style>
                     <Style TargetType="Ellipse">
@@ -60,13 +60,15 @@
                 <RowDefinition></RowDefinition>
             </Grid.RowDefinitions>
 
-            <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0">
-                <Label Content="Min Range"></Label>
-                <Label Content="{Binding MinRange.Value, StringFormat=N1}" MinWidth="50"></Label>
+            <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0" MinWidth="50">
+                <TextBlock VerticalAlignment="Center">
+                    <Run Text="Min Range: "/><Run Text="{Binding MinRange.Value}"/><Run Text=" km"/>
+                </TextBlock>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" MinWidth="50">
-                <Label Content="Max Range"></Label>
-                <Label Content="{Binding MaxRange.Value, StringFormat=N1}"></Label>
+                <TextBlock VerticalAlignment="Center">
+                    <Run Text="Max Range: "/><Run Text="{Binding MaxRange.Value}"/><Run Text=" km"/>
+                </TextBlock>
             </StackPanel>
             <Slider Value="{Binding MinRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="0"/>
             <Slider Value="{Binding MaxRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="1"/>
@@ -83,11 +85,11 @@
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0">
-                <Label Content="Target Direction"></Label>
+                <Label Content="Target Direction: "></Label>
                 <Label Content="{Binding TargetDirection.Value}" MinWidth="50"></Label>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="1" MinWidth="50">
-                <Label Content="Direction Randomness"></Label>
+                <Label Content="Direction Randomness: "></Label>
                 <Label Content="{Binding DirectionRandomness.Value}"></Label>
             </StackPanel>
             <Slider Value="{Binding TargetDirection.Value}" Minimum="0" Maximum="360" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="0"/>
@@ -95,7 +97,7 @@
         </Grid>
 
         <StackPanel Orientation="Horizontal">
-            <Label Content="Target Found Distance"></Label>
+            <Label Content="Target Found Distance: "></Label>
             <Label Content="{Binding TargetFoundDistance.Value}"></Label>
         </StackPanel>
         <Slider Minimum=".1" Maximum="2" Value="{Binding TargetFoundDistance.Value}" SmallChange=".1" LargeChange=".2"></Slider>
@@ -131,10 +133,12 @@
         <CheckBox Content="Text Announcement" IsChecked="{Binding TextAnnouncement.Value}"></CheckBox>
 
         <Border Height="10"></Border>
-        
+
         <Button x:Name="placeTargetButton" Content="Place Target" Command="{Binding CmdPlaceTarget}" IsEnabled="{Binding Connected}" Width="100" HorizontalAlignment="Left" />
         
-        <Label Content="Status" Visibility="Hidden"></Label>
-        <Label Content="{Binding StatusText.Value}" Width="Auto" Visibility="Hidden" />
+        <Border Height="10"></Border>
+        <CheckBox Content="Debug Mode" IsChecked="{Binding Debug.Value}"></CheckBox>
+        <Label Content="Status" Visibility="{Binding Debug.Value, Converter={StaticResource BooleanToVisibilityConverter}}"></Label>
+        <Label Content="{Binding StatusText.Value}" Width="Auto" Visibility="{Binding Debug.Value, Converter={StaticResource BooleanToVisibilityConverter}}" />
     </StackPanel>
 </Window>

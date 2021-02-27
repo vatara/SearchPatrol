@@ -2,14 +2,10 @@
 using Newtonsoft.Json;
 using SearchPatrol.Common;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace SearchPatrol.Wpf
@@ -114,6 +110,8 @@ namespace SearchPatrol.Wpf
         #endregion
 
         readonly SearchPatrolSettings settings = new SearchPatrolSettings();
+
+        public Prop<bool> Debug { get; set; } = new Prop<bool>();
 
         public SearchPatrolViewModel()
         {
@@ -319,12 +317,10 @@ namespace SearchPatrol.Wpf
 
             TryConnect();
 
-            /*
             var text = $"User: {searchPatrol.UserLat:0.000}, {searchPatrol.UserLng:0.000}\n";
             text += $"Heading: {searchPatrol.TargetBearing:0}, Distance: {searchPatrol.TargetDistance:0.0}\n";
             text += $"Target is about {searchPatrol.TargetFuzzedDistance} km {searchPatrol.TargetFuzzedDirection}";
-            statusText.Value = text;
-            */
+            StatusText.Value = text;
 
             WingWave.Value = searchPatrol.DetectWingWave();
         }
