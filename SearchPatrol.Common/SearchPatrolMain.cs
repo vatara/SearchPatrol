@@ -215,7 +215,6 @@ namespace SearchPatrol.Common
         {
             if (bankHistory.Count == 0) return false;
 
-
             var angles = bankHistory.Select(i => i.angle).Where(a => Math.Abs(a) > waveDetectAngle);
 
             var directions = new int[] { -1, 1 };
@@ -254,7 +253,7 @@ namespace SearchPatrol.Common
             var dist = GeoCalculator.GetDistance(UserLat, UserLng, targetLocation.Latitude, targetLocation.Longitude);
             if (dist > TargetFoundDistance)
             {
-                AnnounceTargetPositionIfNeeded();
+                AnnounceTargetPositionIfNeeded(true);
                 return;
             }
 
@@ -383,7 +382,7 @@ namespace SearchPatrol.Common
         SIMCONNECT_DATA_INITPOSITION GetRandomTargetLocation()
         {
             var direction = (double)Math.Abs(TargetDirection);
-            direction += random.NextDouble() * Math.Abs(DirectionRandomness);
+            direction += (random.NextDouble() - .5) * Math.Abs(DirectionRandomness);
             direction %= 360;
 
             var distance = TargetRangeKmMin + random.NextDouble() * (TargetRangeKmMax - TargetRangeKmMin);
@@ -422,8 +421,6 @@ namespace SearchPatrol.Common
         {
             if (targetId == null) return;
 
-            var announceName = false;
-
             var sinceLast = DateTimeOffset.UtcNow - lastAnnounce.time;
             if (sinceLast.TotalSeconds < 10 && !force) return;
 
@@ -435,7 +432,7 @@ namespace SearchPatrol.Common
                 var announceDist = announcePoints[i];
                 if (distance < announceDist && (lastAnnounce.distance > announceDist || force))
                 {
-                    AnnounceMessage(TargetPositionMessage(announceName, i == 0));
+                    AnnounceMessage(TargetPositionMessage(true, nearby: i == 0));
                     lastAnnounce = (DateTimeOffset.UtcNow, announceDist);
                     return;
                 }
@@ -447,7 +444,7 @@ namespace SearchPatrol.Common
                 var p = announcePoints[i];
                 if (distance > p && lastAnnounce.distance < p)
                 {
-                    AnnounceMessage(TargetPositionMessage(false, false));
+                    AnnounceMessage(TargetPositionMessage(true, false));
                     lastAnnounce = (DateTimeOffset.UtcNow, p);
                     return;
                 }
