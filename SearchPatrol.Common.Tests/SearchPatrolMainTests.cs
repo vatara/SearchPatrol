@@ -21,14 +21,14 @@ namespace SearchPatrol.Common.Tests
         [Fact]
         public void WaveDetect_Works()
         {
-            var bankHistory = new List<Tuple<DateTimeOffset, double>>()
+            var bankHistory = new List<(DateTimeOffset, double)>()
             {
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, -20),
+                (DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, 20),
+                (DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, -20),
+                (DateTimeOffset.Now, 0),
             };
 
             Assert.True(SearchPatrolMain.DetectWingWave(bankHistory, 15));
@@ -37,14 +37,14 @@ namespace SearchPatrol.Common.Tests
         [Fact]
         public void WaveDetect_WorksReverse()
         {
-            var bankHistory = new List<Tuple<DateTimeOffset, double>>()
+            var bankHistory = new List<(DateTimeOffset, double)>()
             {
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, 20),
+                (DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, -20),
+                (DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, 20),
+                (DateTimeOffset.Now, 0),
             };
 
             Assert.True(SearchPatrolMain.DetectWingWave(bankHistory, 15));
@@ -53,14 +53,14 @@ namespace SearchPatrol.Common.Tests
         [Fact]
         public void WaveDetect_ReturnsFalseWhenLowAngles()
         {
-            var bankHistory = new List<Tuple<DateTimeOffset, double>>()
+            var bankHistory = new List<(DateTimeOffset, double)>()
             {
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 14),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, -20),
+                (DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, 14),
+                (DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, -20),
+                (DateTimeOffset.Now, 0),
             };
 
             Assert.False(SearchPatrolMain.DetectWingWave(bankHistory, 15));
@@ -71,14 +71,14 @@ namespace SearchPatrol.Common.Tests
         {
             var minAngle = 15 * Math.PI / 180;
             var angle = minAngle + .1;
-            var bankHistory = new List<Tuple<DateTimeOffset, double>>()
+            var bankHistory = new List<(DateTimeOffset, double)>()
             {
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, angle),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, angle),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, angle),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -angle),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -angle),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -angle),
+                (DateTimeOffset.Now, angle),
+                (DateTimeOffset.Now, angle),
+                (DateTimeOffset.Now, angle),
+                (DateTimeOffset.Now, -angle),
+                (DateTimeOffset.Now, -angle),
+                (DateTimeOffset.Now, -angle),
             };
 
             Assert.False(SearchPatrolMain.DetectWingWave(bankHistory, minAngle));
@@ -87,14 +87,14 @@ namespace SearchPatrol.Common.Tests
         [Fact]
         public void WaveDetect_ReturnsFalseWhenSameDirectionsNegative()
         {
-            var bankHistory = new List<Tuple<DateTimeOffset, double>>()
+            var bankHistory = new List<(DateTimeOffset, double)>()
             {
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, -20),
+                (DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, -20),
+                (DateTimeOffset.Now, 0),
+                (DateTimeOffset.Now, -20),
+                (DateTimeOffset.Now, 0),
             };
 
             Assert.False(SearchPatrolMain.DetectWingWave(bankHistory, 15));
