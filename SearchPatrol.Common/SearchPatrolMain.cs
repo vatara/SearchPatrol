@@ -23,8 +23,8 @@ namespace SearchPatrol.Common
 
         readonly static double radsToDeg = 180 / Math.PI;
         readonly static double degToRads = Math.PI / 180;
-        readonly List<Tuple<DateTimeOffset, double>> bankHistory = new List<Tuple<DateTimeOffset, double>>();
-        readonly double waveDetectAngle = 15 * Math.PI / 180;
+        readonly List<(DateTimeOffset time, double angle)> bankHistory = new List<(DateTimeOffset, double)>();
+        readonly double waveDetectAngle = 15;
         readonly double waveDetectDuration = 5;
 
         readonly Random random = new Random();
@@ -38,7 +38,7 @@ namespace SearchPatrol.Common
         uint? targetId = null;
         string targetName = "";
 
-        Tuple<DateTimeOffset, double> lastAnnounce = new Tuple<DateTimeOffset, double>(DateTimeOffset.MinValue, double.MaxValue);
+        (DateTimeOffset time, double distance) lastAnnounce = (DateTimeOffset.MinValue, double.MaxValue);
         public bool ShowTextAnnouncements { get; set; } = true;
         public delegate void AnnouncementEventHandler(string message);
         public event AnnouncementEventHandler OnAnnouncement;
@@ -49,9 +49,6 @@ namespace SearchPatrol.Common
             UserLng,
             UserAlt,
             UserBank,
-            TargetCreate,
-            TargetRemove,
-            DisplayText
         }
 
         enum Definitions
@@ -61,6 +58,11 @@ namespace SearchPatrol.Common
             UserAlt,
             UserBank
         }
+
+        private uint requestId = (uint)Requests.UserBank + 1;
+        private uint targetRequestId;
+
+        private readonly string UnitsDegrees = "degrees";
 
         private bool connected;
         public bool Connected => connected;
@@ -152,7 +154,7 @@ namespace SearchPatrol.Common
 
         private void SimConnect_OnRecvAssignedObjectId(SimConnect sender, SIMCONNECT_RECV_ASSIGNED_OBJECT_ID data)
         {
-            if (data.dwRequestID == (uint)Requests.TargetCreate)
+            if (data.dwRequestID == targetRequestId)
             {
                 targetId = data.dwObjectID;
                 AnnounceTargetPositionIfNeeded();
@@ -166,7 +168,7 @@ namespace SearchPatrol.Common
                 double dValue = (double)data.dwData[0];
                 latReq.value = dValue;
                 latReq.m_bStillPending = false;
-                userLocation.Latitude = latReq.value * radsToDeg;
+                userLocation.Latitude = latReq.value;
                 AnnounceTargetPositionIfNeeded();
             }
             else if (data.dwRequestID == lngReq.request)
@@ -174,7 +176,7 @@ namespace SearchPatrol.Common
                 double dValue = (double)data.dwData[0];
                 lngReq.value = dValue;
                 lngReq.m_bStillPending = false;
-                userLocation.Longitude = lngReq.value * radsToDeg;
+                userLocation.Longitude = lngReq.value;
                 AnnounceTargetPositionIfNeeded();
             }
             else if (data.dwRequestID == bankReq.request)
@@ -182,9 +184,10 @@ namespace SearchPatrol.Common
                 double dValue = (double)data.dwData[0];
                 bankReq.value = dValue;
                 bankReq.m_bStillPending = false;
-                bankHistory.Add(new Tuple<DateTimeOffset, double>(DateTimeOffset.UtcNow, dValue));
+                bankHistory.Add((DateTimeOffset.UtcNow, dValue));
             }
 
+            CleanBankHistory();
             CheckTargetFound();
         }
 
@@ -192,7 +195,7 @@ namespace SearchPatrol.Common
         {
             while (bankHistory.Count > 0)
             {
-                if ((DateTimeOffset.UtcNow - bankHistory[0].Item1).TotalSeconds > waveDetectDuration)
+                if ((DateTimeOffset.UtcNow - bankHistory[0].time).TotalSeconds > waveDetectDuration)
                 {
                     bankHistory.RemoveAt(0);
                 }
@@ -208,35 +211,34 @@ namespace SearchPatrol.Common
             return DetectWingWave(bankHistory, waveDetectAngle);
         }
 
-        public static bool DetectWingWave(List<Tuple<DateTimeOffset, double>> bankHistory, double waveDetectAngle)
+        public static bool DetectWingWave(List<(DateTimeOffset time, double angle)> bankHistory, double waveDetectAngle)
         {
             if (bankHistory.Count == 0) return false;
 
-            var waveCount = 0;
-            var reverseCount = 0;
 
-            var angles = bankHistory.Select(i => i.Item2);
+            var angles = bankHistory.Select(i => i.angle).Where(a => Math.Abs(a) > waveDetectAngle);
 
-            var waveDirection = -1;
-            foreach (var a in angles)
+            var directions = new int[] { -1, 1 };
+            for (var i = 0; i < directions.Length; i++)
             {
-                var detectAngle = waveDetectAngle * waveDirection;
-                if (Math.Sign(a) == Math.Sign(detectAngle) && Math.Abs(a) > Math.Abs(detectAngle))
+                var waveCount = 0;
+                var d = directions[i];
+                foreach (var a in angles)
                 {
-                    waveCount++;
-                    waveDirection *= -1;
-                }
-                else if (Math.Sign(a) != Math.Sign(detectAngle) && Math.Abs(a) > Math.Abs(detectAngle))
-                {
-                    reverseCount++;
-                    waveDirection *= -1;
+                    var detectAngle = waveDetectAngle * d;
+                    if (Math.Sign(a) == Math.Sign(detectAngle) && Math.Abs(a) > Math.Abs(detectAngle))
+                    {
+                        waveCount++;
+                        d *= -1;
+
+                        if (waveCount >= 3)
+                        {
+                            return true;
+                        }
+                    }
                 }
             }
 
-            if (waveCount >= 3 || reverseCount >= 3)
-            {
-                return true;
-            }
             return false;
         }
 
@@ -244,15 +246,22 @@ namespace SearchPatrol.Common
         {
             if (targetId == null) return;
 
-            CleanBankHistory();
             var wave = DetectWingWave(bankHistory, waveDetectAngle);
             if (!wave) return;
+
+            bankHistory.Clear();
+
+            var dist = GeoCalculator.GetDistance(UserLat, UserLng, targetLocation.Latitude, targetLocation.Longitude);
+            if (dist > TargetFoundDistance)
+            {
+                AnnounceTargetPositionIfNeeded();
+                return;
+            }
 
             AnnounceMessage("Target found");
             Task.Run(async () =>
             {
                 await Task.Delay(5000);
-                bankHistory.Clear();
                 PlaceRandomTarget();
             });
         }
@@ -272,11 +281,11 @@ namespace SearchPatrol.Common
 
         void RequestUserPlaneData()
         {
-            latReq = wrapper.CreateSimvarRequest("PLANE LATITUDE", "radians", (uint)Requests.UserLat, (uint)Definitions.UserLat);
+            latReq = wrapper.CreateSimvarRequest("PLANE LATITUDE", UnitsDegrees, (uint)Requests.UserLat, (uint)Definitions.UserLat);
             AddAndRequestDataOnSimObject(latReq);
-            lngReq = wrapper.CreateSimvarRequest("PLANE LONGITUDE", "radians", (uint)Requests.UserLng, (uint)Definitions.UserLng);
+            lngReq = wrapper.CreateSimvarRequest("PLANE LONGITUDE", UnitsDegrees, (uint)Requests.UserLng, (uint)Definitions.UserLng);
             AddAndRequestDataOnSimObject(lngReq);
-            bankReq = wrapper.CreateSimvarRequest("PLANE BANK DEGREES", "radians", (uint)Requests.UserBank, (uint)Definitions.UserBank);
+            bankReq = wrapper.CreateSimvarRequest("PLANE BANK DEGREES", UnitsDegrees, (uint)Requests.UserBank, (uint)Definitions.UserBank);
             AddAndRequestDataOnSimObject(bankReq, SIMCONNECT_PERIOD.SIM_FRAME);
         }
 
@@ -296,28 +305,6 @@ namespace SearchPatrol.Common
                 targetName = type.GetType().Name;
                 wrapper.CreateAiSimulatedObject($"{type.Random()}", position, request);
             }
-        }
-
-        // cos(d) = sin(φА)·sin(φB) + cos(φА)·cos(φB)·cos(λА − λB),
-        //  where φА, φB are latitudes and λА, λB are longitudes
-        // Distance = d * R
-        public static double DistanceBetweenPlaces(double lon1, double lat1, double lon2, double lat2)
-        {
-            double earthRadiusKm = 6371;
-
-            double sLat1 = Math.Sin(lat1);
-            double sLat2 = Math.Sin(lat2);
-            double cLat1 = Math.Cos(lat1);
-            double cLat2 = Math.Cos(lat2);
-            double cLon = Math.Cos(lon1) - lon2;
-
-            double cosD = sLat1 * sLat2 + cLat1 * cLat2 * cLon;
-
-            double d = Math.Acos(cosD);
-
-            double dist = earthRadiusKm * d;
-
-            return dist;
         }
 
         // https://www.movable-type.co.uk/scripts/latlong-vincenty.html
@@ -413,15 +400,17 @@ namespace SearchPatrol.Common
 
         public void PlaceRandomTarget()
         {
-            lastAnnounce = null;
+            lastAnnounce = (DateTimeOffset.MinValue, double.MaxValue);
 
             var pos = GetRandomTargetLocation();
             if (targetId != null)
             {
-                SimConnect.AIRemoveObject(targetId.Value, Requests.TargetRemove);
+                SimConnect.AIRemoveObject(targetId.Value, (Requests)targetRequestId);
                 targetId = null;
             }
-            CreateRandomSimObject(pos, (uint)Requests.TargetCreate);
+            CreateRandomSimObject(pos, requestId);
+            targetRequestId = requestId;
+            requestId++;
             targetLocation.Latitude = pos.Latitude;
             targetLocation.Longitude = pos.Longitude;
 
@@ -429,30 +418,25 @@ namespace SearchPatrol.Common
         }
 
         readonly int[] announcePoints = new int[] { 1, 2, 5, 10, 20, 50, 100, 150, 200, 300, 400, 500 };
-        void AnnounceTargetPositionIfNeeded()
+        void AnnounceTargetPositionIfNeeded(bool force = false)
         {
             if (targetId == null) return;
 
             var announceName = false;
-            if (lastAnnounce == null)
-            {
-                announceName = true;
-                lastAnnounce = new Tuple<DateTimeOffset, double>(DateTimeOffset.MinValue, double.MaxValue);
-            }
 
-            var sinceLast = DateTimeOffset.UtcNow - lastAnnounce.Item1;
-            if (sinceLast.TotalSeconds < 10) return;
+            var sinceLast = DateTimeOffset.UtcNow - lastAnnounce.time;
+            if (sinceLast.TotalSeconds < 10 && !force) return;
 
             var distance = TargetDistance;
 
             // check for getting closer announcements
             for (var i = 0; i < announcePoints.Length; i++)
             {
-                var p = announcePoints[i];
-                if (distance < p && lastAnnounce.Item2 > p)
+                var announceDist = announcePoints[i];
+                if (distance < announceDist && (lastAnnounce.distance > announceDist || force))
                 {
                     AnnounceMessage(TargetPositionMessage(announceName, i == 0));
-                    lastAnnounce = new Tuple<DateTimeOffset, double>(DateTimeOffset.UtcNow, p);
+                    lastAnnounce = (DateTimeOffset.UtcNow, announceDist);
                     return;
                 }
             }
@@ -461,10 +445,10 @@ namespace SearchPatrol.Common
             for (var i = 1; i < announcePoints.Length; i++)
             {
                 var p = announcePoints[i];
-                if (distance > p && lastAnnounce.Item2 < p)
+                if (distance > p && lastAnnounce.distance < p)
                 {
                     AnnounceMessage(TargetPositionMessage(false, false));
-                    lastAnnounce = new Tuple<DateTimeOffset, double>(DateTimeOffset.UtcNow, p);
+                    lastAnnounce = (DateTimeOffset.UtcNow, p);
                     return;
                 }
             }
@@ -475,7 +459,8 @@ namespace SearchPatrol.Common
             OnAnnouncement?.Invoke(message);
             if (ShowTextAnnouncements)
             {
-                SimConnect.Text(SIMCONNECT_TEXT_TYPE.PRINT_BLACK, 10, Requests.DisplayText, message);
+                SimConnect.Text(SIMCONNECT_TEXT_TYPE.PRINT_BLACK, 10, (Requests)requestId, message);
+                requestId++;
             }
         }
 
