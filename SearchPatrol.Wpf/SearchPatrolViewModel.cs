@@ -48,7 +48,7 @@ namespace SearchPatrol.Wpf
         {
             Console.WriteLine("Disconnect");
 
-            timer.Stop();
+            //timer.Stop();
             OddTick = false;
 
             searchPatrol.Disconnect();
@@ -188,7 +188,7 @@ namespace SearchPatrol.Wpf
                 SaveSettings();
             };
 
-            TextAnnouncement.Value = settings.TextAnnouncement;
+            searchPatrol.ShowTextAnnouncements = TextAnnouncement.Value = settings.TextAnnouncement;
             TextAnnouncement.PropertyChanged += (sender, args) =>
             {
                 settings.TextAnnouncement = searchPatrol.ShowTextAnnouncements = TextAnnouncement.Value;
