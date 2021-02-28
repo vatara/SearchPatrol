@@ -70,8 +70,8 @@
                     <Run Text="Max Range: "/><Run Text="{Binding MaxRange.Value}"/><Run Text=" km"/>
                 </TextBlock>
             </StackPanel>
-            <Slider Value="{Binding MinRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="0"/>
-            <Slider Value="{Binding MaxRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Grid.Row="1" Grid.Column="1"/>
+            <Slider Value="{Binding MinRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange=".1" LargeChange="1" Grid.Row="1" Grid.Column="0"/>
+            <Slider Value="{Binding MaxRange.Value, Mode=TwoWay}" Minimum="0" Maximum="100" SmallChange=".1" LargeChange="1" Grid.Row="1" Grid.Column="1"/>
         </Grid>
 
         <Grid>
