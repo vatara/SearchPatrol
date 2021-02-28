@@ -69,17 +69,19 @@ namespace SearchPatrol.Common.Tests
         [Fact]
         public void WaveDetect_ReturnsFalseWhenSameDirections()
         {
+            var minAngle = 15 * Math.PI / 180;
+            var angle = minAngle + .1;
             var bankHistory = new List<Tuple<DateTimeOffset, double>>()
             {
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 20),
-                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, 0),
+                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, angle),
+                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, angle),
+                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, angle),
+                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -angle),
+                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -angle),
+                new Tuple<DateTimeOffset, double>(DateTimeOffset.Now, -angle),
             };
 
-            Assert.False(SearchPatrolMain.DetectWingWave(bankHistory, 15));
+            Assert.False(SearchPatrolMain.DetectWingWave(bankHistory, minAngle));
         }
 
         [Fact]
