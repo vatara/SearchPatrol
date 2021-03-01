@@ -33,8 +33,8 @@
             </Ellipse>
 
             <Border Width="50"></Border>
-            <Label Content="Wing Wave: "></Label>
-            <Ellipse Height="14" Stroke="Black" Width="14">
+            <Label Content="Wing Wave: " Visibility="Hidden"></Label>
+            <Ellipse Height="14" Stroke="Black" Width="14" Visibility="Hidden">
                 <Ellipse.Style>
                     <Style TargetType="Ellipse">
                         <Style.Triggers>
@@ -97,8 +97,11 @@
         </Grid>
 
         <StackPanel Orientation="Horizontal">
-            <Label Content="Target Found Distance: "></Label>
-            <Label Content="{Binding TargetFoundDistance.Value}"></Label>
+            <TextBlock VerticalAlignment="Center">
+                <Run Text="Target Found Distance: "/>
+                <Run Text="{Binding TargetFoundDistance.Value}"/>
+                <Run Text=" km"/>
+            </TextBlock>
         </StackPanel>
         <Slider Minimum=".1" Maximum="2" Value="{Binding TargetFoundDistance.Value}" SmallChange=".1" LargeChange=".2"></Slider>
 
