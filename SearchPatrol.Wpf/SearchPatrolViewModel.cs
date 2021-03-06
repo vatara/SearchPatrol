@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -280,26 +281,29 @@ namespace SearchPatrol.Wpf
 
         private void Connect()
         {
-            try
+            Task.Run(() =>
             {
-                /// The constructor is similar to SimConnect_Open in the native API
-                //simConnect.simConnect = new SimConnect("Simconnect - Simvar test", m_hWnd, WM_USER_SIMCONNECT, null, bFSXcompatible ? (uint)1 : 0);
-                searchPatrol.Connect(m_hWnd);
+                try
+                {
+                    /// The constructor is similar to SimConnect_Open in the native API
+                    //simConnect.simConnect = new SimConnect("Simconnect - Simvar test", m_hWnd, WM_USER_SIMCONNECT, null, bFSXcompatible ? (uint)1 : 0);
+                    searchPatrol.Connect(m_hWnd);
 
-                /// Listen to connect and quit msgs
-                searchPatrol.SimConnect.OnRecvOpen += new SimConnect.RecvOpenEventHandler(SimConnect_OnRecvOpen);
-                searchPatrol.SimConnect.OnRecvQuit += new SimConnect.RecvQuitEventHandler(SimConnect_OnRecvQuit);
+                    /// Listen to connect and quit msgs
+                    searchPatrol.SimConnect.OnRecvOpen += new SimConnect.RecvOpenEventHandler(SimConnect_OnRecvOpen);
+                    searchPatrol.SimConnect.OnRecvQuit += new SimConnect.RecvQuitEventHandler(SimConnect_OnRecvQuit);
 
-                /// Listen to exceptions
-                searchPatrol.SimConnect.OnRecvException += new SimConnect.RecvExceptionEventHandler(SimConnect_OnRecvException);
+                    /// Listen to exceptions
+                    searchPatrol.SimConnect.OnRecvException += new SimConnect.RecvExceptionEventHandler(SimConnect_OnRecvException);
 
-                /// Catch a simobject data request
-                //searchPatrol.SimConnect.OnRecvSimobjectDataBytype += new SimConnect.RecvSimobjectDataBytypeEventHandler(SimConnect_OnRecvSimobjectDataBytype);
-            }
-            catch (COMException ex)
-            {
-                Console.WriteLine("Connection to MSFS failed: " + ex.Message);
-            }
+                    /// Catch a simobject data request
+                    //searchPatrol.SimConnect.OnRecvSimobjectDataBytype += new SimConnect.RecvSimobjectDataBytypeEventHandler(SimConnect_OnRecvSimobjectDataBytype);
+                }
+                catch (COMException ex)
+                {
+                    Console.WriteLine("Connection to MSFS failed: " + ex.Message);
+                }
+            });
         }
 
         // May not be the best way to achive regular requests.
