@@ -24,5 +24,5 @@ After you find it, do a "wing wave", tipping the wings back and forth a few time
 
 # How to run
 
-Download and run the setup. Run it before or after you run MSFS, it will automatically connect. 
+Download and run the setup. Run SearchPatrol before or after you run MSFS, it will automatically connect. 
 Once you're flying in the area you want to search press **Place Target** to get started.
