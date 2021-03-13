@@ -77,6 +77,8 @@ namespace SearchPatrol.Wpf
         private bool m_bOddTick = false;
 
         public BaseCommand CmdPlaceTarget { get; private set; }
+        public BaseCommand CmdCopyTargetInfo { get; private set; }
+        public BaseCommand CmdPasteTargetInfo { get; private set; }
 
         public NamedProp<bool> AircraftIsChecked { get; set; } = new NamedProp<bool>("Aircraft");
         public NamedProp<bool> GroundVehicleIsChecked { get; set; } = new NamedProp<bool>("GroundVehicle");
@@ -102,6 +104,9 @@ namespace SearchPatrol.Wpf
         public Prop<int> VoiceVolume { get; set; } = new Prop<int>();
         public Prop<bool> TextAnnouncement { get; set; } = new Prop<bool>();
 
+        public Prop<bool> TargetInfoExists { get; set; } = new Prop<bool>();
+        public Prop<bool> ClipboardHasValidTargetInfo { get; set; } = new Prop<bool>();
+
         #endregion
 
         #region Real time
@@ -119,14 +124,7 @@ namespace SearchPatrol.Wpf
             settings = LoadSettings();
             foreach (var t in searchPatrol.TargetChoices)
             {
-                if (settings.TargetChoices.Contains(t))
-                {
-                    searchPatrol.SetTargetEnabled(t, true);
-                }
-                else
-                {
-                    searchPatrol.SetTargetEnabled(t, false);
-                }
+                searchPatrol.SetTargetEnabled(t, settings.TargetChoices.Contains(t));
             }
 
             searchPatrol.TargetRangeKmMin = MinRange.Value = settings.MinRange;
@@ -197,6 +195,8 @@ namespace SearchPatrol.Wpf
             };
 
             CmdPlaceTarget = new BaseCommand((p) => { PlaceTarget(); });
+            CmdCopyTargetInfo = new BaseCommand((o) => { CopyTargetInfo(); });
+            CmdPasteTargetInfo = new BaseCommand((o) => { PasteTargetInfo(); });
 
             CreateTargetProp(AircraftIsChecked);
             CreateTargetProp(GroundVehicleIsChecked);
@@ -327,6 +327,9 @@ namespace SearchPatrol.Wpf
             StatusText.Value = text;
 
             WingWave.Value = searchPatrol.DetectWingWave();
+
+            TargetInfoExists.Value = searchPatrol.TargetInfo != null;
+            ClipboardHasValidTargetInfo.Value = DoesClipboardHasValidTargetInfo();
         }
 
         void TryConnect()
@@ -403,6 +406,57 @@ namespace SearchPatrol.Wpf
             var text = message.Replace("km", "kilometers");
             speechSynth.SpeakAsyncCancelAll();
             speechSynth.SpeakAsync(text);
+        }
+
+        public void CopyTargetInfo()
+        {
+            if (searchPatrol.TargetInfo == null)
+            {
+                MessageBox.Show("Can't copy, no current target.", "Copy Target Error");
+                return;
+            }
+            var json = JsonConvert.SerializeObject(searchPatrol.TargetInfo);
+            Clipboard.SetText(json ?? "");
+        }
+
+        bool DoesClipboardHasValidTargetInfo() {
+            var json = Clipboard.GetText();
+            if (string.IsNullOrEmpty(json))
+            {
+                return false;
+            }
+
+            TargetInfo targetInfo = null;
+            try
+            {
+                targetInfo = JsonConvert.DeserializeObject<TargetInfo>(json);
+            }
+            catch (Exception) { }
+
+            if (targetInfo == null || (targetInfo.Coordinate.Latitude == 0 && targetInfo.Coordinate.Longitude == 0))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public void PasteTargetInfo()
+        {
+            var json = Clipboard.GetText();
+            TargetInfo targetInfo = null;
+            try
+            {
+                targetInfo = JsonConvert.DeserializeObject<TargetInfo>(json);
+            }
+            catch (Exception) { }
+
+            if (targetInfo == null || (targetInfo.Coordinate.Latitude == 0 && targetInfo.Coordinate.Longitude == 0))
+            {
+                MessageBox.Show("Can't paste, clipboard doesn't have valid target info", "Paste Target Error");
+                return;
+            }
+
+            searchPatrol.PlaceTargetFromTargetInfo(targetInfo);
         }
     }
 }

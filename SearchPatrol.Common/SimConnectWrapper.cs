@@ -9,6 +9,8 @@ namespace SearchPatrol.Common
 
     public enum REQUEST { Dummy = 0 }
 
+    public enum GROUP_ID { Dummy = 0 }
+
     public class SimConnectWrapper
     {
         public static uint WM_USER_SIMCONNECT = 0x0402;
@@ -20,9 +22,16 @@ namespace SearchPatrol.Common
 
         List<SimvarRequest> requests = new List<SimvarRequest>();
 
+        enum Events
+        {
+            FreezeLatitudeLongitude
+        }
+
         public void Connect(string name, IntPtr hWnd, WaitHandle hEventHandle, uint configIndex)
         {
             simConnect = new SimConnect(name, hWnd, WM_USER_SIMCONNECT, hEventHandle, configIndex);
+
+            simConnect.MapClientEventToSimEvent(Events.FreezeLatitudeLongitude, "FREEZE_LATITUDE_LONGITUDE_SET");
         }
 
         public SimvarRequest CreateSimvarRequest(string name, string units, uint requestId, uint definitionId)
@@ -77,6 +86,16 @@ namespace SearchPatrol.Common
         {
             if (simConnect == null) return;
             simConnect.AICreateNonATCAircraft(szContainerTitle, "N123", initPos, (REQUEST)request);
+        }
+
+        public void FreezeObjectPosition(uint objectID)
+        {
+            if (simConnect == null) return;
+            simConnect.TransmitClientEvent(objectID,
+                                           Events.FreezeLatitudeLongitude,
+                                           1,
+                                           (GROUP_ID)SimConnect.SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                           SIMCONNECT_EVENT_FLAG.GROUPID_IS_PRIORITY);
         }
     }
 }

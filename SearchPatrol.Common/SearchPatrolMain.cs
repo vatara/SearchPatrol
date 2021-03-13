@@ -36,7 +36,8 @@ namespace SearchPatrol.Common
         public double TargetFoundDistance { get; set; } = 1;
 
         uint? targetId = null;
-        string targetName = "";
+        TargetInfo targetInfo = null;
+        public TargetInfo TargetInfo => targetInfo;
 
         (DateTimeOffset time, double distance) lastAnnounce = (DateTimeOffset.MinValue, double.MaxValue);
         public bool ShowTextAnnouncements { get; set; } = true;
@@ -157,6 +158,7 @@ namespace SearchPatrol.Common
             if (data.dwRequestID == targetRequestId)
             {
                 targetId = data.dwObjectID;
+                wrapper.FreezeObjectPosition(data.dwObjectID);
                 AnnounceTargetPositionIfNeeded();
             }
         }
@@ -288,22 +290,18 @@ namespace SearchPatrol.Common
             AddAndRequestDataOnSimObject(bankReq, SIMCONNECT_PERIOD.SIM_FRAME);
         }
 
-        void CreateRandomSimObject(SIMCONNECT_DATA_INITPOSITION position, uint request)
+        void CreateSimObjectFromTargetInfo(TargetInfo targetInfo, uint request)
         {
             if (SimConnect == null) return;
-            if (targetChoices.Count == 0) return;
 
-            var type = targetChoices.ToList()[random.Next(0, targetChoices.Count - 1)];
-            if (type is Aircraft)
+            this.targetInfo = targetInfo;
+            var position = new SIMCONNECT_DATA_INITPOSITION
             {
-                targetName = type.Random();
-                wrapper.CreateAiNonAtcAircraft(targetName, position, request);
-            }
-            else
-            {
-                targetName = type.GetType().Name;
-                wrapper.CreateAiSimulatedObject($"{type.Random()}", position, request);
-            }
+                Latitude = targetInfo.Coordinate.Latitude,
+                Longitude = targetInfo.Coordinate.Longitude,
+                OnGround = 1
+            };
+            wrapper.CreateAiSimulatedObject(targetInfo.ContainerTitle, position, request);
         }
 
         // https://www.movable-type.co.uk/scripts/latlong-vincenty.html
@@ -379,7 +377,7 @@ namespace SearchPatrol.Common
             return HeadingDistanceToCoords(start.Latitude, start.Longitude, headingDeg, distanceM);
         }
 
-        SIMCONNECT_DATA_INITPOSITION GetRandomTargetLocation()
+        Coordinate GetRandomTargetLocation()
         {
             var direction = (double)Math.Abs(TargetDirection);
             direction += (random.NextDouble() - .5) * Math.Abs(DirectionRandomness);
@@ -387,31 +385,44 @@ namespace SearchPatrol.Common
 
             var distance = TargetRangeKmMin + random.NextDouble() * (TargetRangeKmMax - TargetRangeKmMin);
 
-            var pos = HeadingDistanceToCoords(userLocation, direction, distance * 1000);
-
-            return new SIMCONNECT_DATA_INITPOSITION
-            {
-                Latitude = pos.Latitude,
-                Longitude = pos.Longitude,
-                OnGround = 1
-            };
+            return HeadingDistanceToCoords(userLocation, direction, distance * 1000);
         }
 
-        public void PlaceRandomTarget()
+        void RemoveCurrentTarget()
         {
-            lastAnnounce = (DateTimeOffset.MinValue, double.MaxValue);
-
-            var pos = GetRandomTargetLocation();
             if (targetId != null)
             {
                 SimConnect.AIRemoveObject(targetId.Value, (Requests)targetRequestId);
                 targetId = null;
+                targetInfo = null;
             }
-            CreateRandomSimObject(pos, requestId);
+        }
+
+        public void PlaceRandomTarget()
+        {
+            if (targetChoices.Count == 0) return;
+
+            var type = targetChoices.ToList()[random.Next(0, targetChoices.Count)];
+            var pos = GetRandomTargetLocation();
+            var targetInfo = new TargetInfo
+            {
+                Name = type.GetType().Name,
+                ContainerTitle = type.Random(),
+                Coordinate = pos
+            };
+            PlaceTargetFromTargetInfo(targetInfo);
+        }
+
+        public void PlaceTargetFromTargetInfo(TargetInfo targetInfo)
+        {
+            lastAnnounce = (DateTimeOffset.MinValue, double.MaxValue);
+
+            RemoveCurrentTarget();
+            CreateSimObjectFromTargetInfo(targetInfo, requestId);
             targetRequestId = requestId;
             requestId++;
-            targetLocation.Latitude = pos.Latitude;
-            targetLocation.Longitude = pos.Longitude;
+            targetLocation.Latitude = targetInfo.Coordinate.Latitude;
+            targetLocation.Longitude = targetInfo.Coordinate.Longitude;
 
             AnnounceTargetPositionIfNeeded();
         }
@@ -438,7 +449,13 @@ namespace SearchPatrol.Common
                 }
             }
 
+
             // check for getting further announcements
+            // skip huge distances
+            if (distance > announcePoints[announcePoints.Length - 1])
+            {
+                return;
+            }
             for (var i = 1; i < announcePoints.Length; i++)
             {
                 var p = announcePoints[i];
@@ -463,7 +480,7 @@ namespace SearchPatrol.Common
 
         string TargetPositionMessage(bool includeName, bool nearby)
         {
-            var text = $"Target {(includeName ? targetName : "")} ";
+            var text = $"Target {(includeName ? targetInfo?.ContainerTitle : "")} ";
             if (nearby)
             {
                 text += "should be near you";
@@ -472,7 +489,7 @@ namespace SearchPatrol.Common
             {
                 text += $"is about {TargetFuzzedDistance} km {TargetFuzzedDirection}";
             }
-            return text;
+            return text.Replace("ASO_", "").Replace("_", " ");
         }
 
         public void SetTargetEnabled(string type, bool enabled)

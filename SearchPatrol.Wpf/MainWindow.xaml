@@ -137,7 +137,16 @@
 
         <Border Height="10"></Border>
 
-        <Button x:Name="placeTargetButton" Content="Place Target" Command="{Binding CmdPlaceTarget}" IsEnabled="{Binding Connected}" Width="100" HorizontalAlignment="Left" />
+        <StackPanel Orientation="Horizontal">
+            <StackPanel.Resources>
+                <Style TargetType="{x:Type Button}">
+                    <Setter Property="Margin" Value="0,0,10,0"/>
+                </Style>
+            </StackPanel.Resources>
+            <Button x:Name="placeTargetButton" Content="Place Target" Command="{Binding CmdPlaceTarget}" IsEnabled="{Binding Connected}" Width="100" HorizontalAlignment="Left" />
+            <Button Content="Copy Target" Command="{Binding CmdCopyTargetInfo}" IsEnabled="{Binding TargetInfoExists.Value}"></Button>
+            <Button Content="Paste Target" Command="{Binding CmdPasteTargetInfo}" IsEnabled="{Binding ClipboardHasValidTargetInfo.Value}"></Button>
+        </StackPanel>
         
         <Border Height="10"></Border>
         <CheckBox Content="Debug Mode" IsChecked="{Binding Debug.Value}"></CheckBox>
