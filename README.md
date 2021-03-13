@@ -21,6 +21,7 @@ After you find it, do a "wing wave", tipping the wings back and forth a few time
 - Target Types: the target type will a random one of the selected types
 - Voice Announcement: target info will be spoken using Windows' text-to-speech
 - Text Announcement: target info will be shown in the game UI
+- Copy/Paste Target: will copy the target info to the clipboard, you can give this to friends for a primitive form of multiplayer
 
 # How to run
 
