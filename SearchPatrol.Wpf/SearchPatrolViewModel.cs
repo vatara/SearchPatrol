@@ -1,7 +1,9 @@
 ﻿using Microsoft.FlightSimulator.SimConnect;
 using Newtonsoft.Json;
 using SearchPatrol.Common;
+using SearchPatrol.Common.SimObjects;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
@@ -118,6 +120,8 @@ namespace SearchPatrol.Wpf
         readonly SearchPatrolSettings settings = new SearchPatrolSettings();
 
         public Prop<bool> Debug { get; set; } = new Prop<bool>();
+
+        readonly List<string> removeTargetTypes = new List<string> { nameof(Boat), nameof(CargoShip), nameof(CruiseShip), nameof(FishingBoat), nameof(Yacht) };
 
         public SearchPatrolViewModel()
         {
@@ -276,6 +280,9 @@ namespace SearchPatrol.Wpf
                     TextAnnouncement = searchPatrol.ShowTextAnnouncements
                 };
             }
+
+            settings.TargetChoices.RemoveAll(t => removeTargetTypes.Contains(t));
+
             return settings;
         }
 

@@ -104,17 +104,19 @@ namespace SearchPatrol.Common
 
         readonly HashSet<SimObject> targetChoices = new HashSet<SimObject>()
         {
+            new Aircraft(),
+            new Animal(),
             new GroundVehicle(),
+            new Human(),
             new Windmill(),
+            new Windsock(),
+            /*
             new Boat(),
-            new FishingBoat(),
-            new Yacht(),
             new CargoShip(),
             new CruiseShip(),
-            new Animal(),
-            new Human(),
-            new Windsock(),
-            new Aircraft()
+            new FishingBoat(),
+            new Yacht(),
+            */
         };
         public List<string> TargetChoices => targetChoices.Select(t => t.GetType().Name).ToList();
 
